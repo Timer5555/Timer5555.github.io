@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บันทึกแคลอรี่</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+        }
+        .nav-button {
+            background-image: linear-gradient(to top, #303030, #4a4a4a);
+            transition: all 0.3s ease;
+        }
+        .nav-button.active {
+            background-image: linear-gradient(to top, #1a1a1a, #303030);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+        .tab-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-button.active {
+            border-color: #4a4a4a;
+            background-color: #f0f0f0;
+            font-weight: 600;
+        }
+        .btn-grad {
+            background-image: linear-gradient(to right, #475569 0%, #1f2937 51%, #475569 100%);
+            transition: 0.5s;
+            background-size: 200% auto;
+            color: white;
+            cursor: pointer;
+        }
+        .btn-grad:hover {
+            background-position: right center;
+        }
+        .hidden-file-input {
+            display: none;
+        }
+        .progress-bar {
+            background-color: #e0e0e0;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            background-color: #4ade80; /* green-400 */
+            transition: width 0.5s ease-in-out;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+        .progress-bar-inner.over {
+             background-color: #f87171; /* red-400 */
+        }
+        .date-range-btn.active {
+            background-color: #1f2937;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-600 text-black-800">
+
+    <div id="app-container" class="max-w-lg mx-auto min-h-screen bg-gray-200 shadow-lg">
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="p-4 pb-24">
+            <!-- Page 1: Input Page -->
+            <div id="page-input">
+                <h1 class="text-2xl font-bold text-gray-700 mb-4">บันทึกรายการอาหาร</h1>
+                <div class="flex border-b mb-4">
+                    <button id="tab-btn-image" class="tab-button flex-1 py-2 px-4 border-b-2 border-transparent text-gray-600">จากรูปภาพ</button>
+                    <button id="tab-btn-text" class="tab-button flex-1 py-2 px-4 border-b-2 border-transparent text-gray-600">จากข้อความ</button>
+                    <button id="tab-btn-manual" class="tab-button flex-1 py-2 px-4 border-b-2 border-transparent text-gray-600">กรอกเอง</button>
+                </div>
+                <div id="tab-content-image" class="tab-panel">
+                    <p class="text-sm text-gray-500 mb-2">AI จะช่วยวิเคราะห์สารอาหารจากรูปภาพ</p>
+                    <div class="bg-gray-100 p-4 rounded-lg text-center">
+                        <img id="image-preview" class="hidden w-full max-w-xs mx-auto rounded-lg mb-4 shadow-md" alt="Image Preview">
+                        <div class="flex space-x-2">
+                            <label for="image-camera-input" class="flex-1 btn-grad p-3 rounded-lg">ถ่ายภาพ</label>
+                            <input type="file" id="image-camera-input" class="hidden-file-input" accept="image/*" capture="environment">
+                            <label for="image-gallery-input" class="flex-1 btn-grad p-3 rounded-lg">เลือกจากอัลบั้ม</label>
+                            <input type="file" id="image-gallery-input" class="hidden-file-input" accept="image/*">
+                        </div>
+                         <p class="text-xs text-gray-400 mt-2">AI อาจวิเคราะห์คลาดเคลื่อนได้</p>
+                    </div>
+                </div>
+                <div id="tab-content-text" class="tab-panel hidden">
+                    <p class="text-sm text-gray-500 mb-2">พิมพ์ชื่ออาหารและปริมาณ เพื่อให้ AI วิเคราะห์</p>
+                    <textarea id="text-input" class="w-full p-3 border rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400" rows="3" placeholder="เช่น ข้าวราดกะเพราหมูกรอบ 1 จาน..."></textarea>
+                    <button id="analyze-text-btn" class="mt-2 w-full btn-grad p-3 rounded-lg">วิเคราะห์</button>
+                    <p class="text-sm text-gray-500 mt-4 mb-2">(ไม่บังคับ) แนบรูปภาพประกอบ</p>
+                    <div class="bg-gray-100 p-4 rounded-lg text-center">
+                        <img id="text-image-preview" class="hidden w-full max-w-xs mx-auto rounded-lg mb-4 shadow-md" alt="Text Image Preview">
+                        <div class="flex space-x-2">
+                            <label for="text-camera-input" class="flex-1 btn-grad p-3 rounded-lg">ถ่ายภาพ</label>
+                            <input type="file" id="text-camera-input" class="hidden-file-input" accept="image/*" capture="environment">
+                            <label for="text-gallery-input" class="flex-1 btn-grad p-3 rounded-lg">เลือกจากอัลบั้ม</label>
+                            <input type="file" id="text-gallery-input" class="hidden-file-input" accept="image/*">
+                        </div>
+                    </div>
+                </div>
+                <div id="tab-content-manual" class="tab-panel hidden">
+                    <p class="text-sm text-gray-500 mb-2">กรอกข้อมูลจากฉลากโภชนาการหรือข้อมูลที่มี</p>
+                     <div class="bg-gray-100 p-4 rounded-lg">
+                        <label for="manual-description" class="block text-left text-sm font-medium text-gray-700">ชื่อเมนูอาหาร</label>
+                        <textarea id="manual-description" class="w-full mt-1 p-2 border rounded-lg" rows="2" placeholder="เช่น สลัดอกไก่, เวย์โปรตีน 1 สกู๊ป"></textarea>
+                        <p class="text-sm text-gray-500 mt-4 mb-2">(ไม่บังคับ) แนบรูปภาพ</p>
+                        <img id="manual-image-preview" class="hidden w-full max-w-xs mx-auto rounded-lg mb-4 shadow-md" alt="Manual Image Preview">
+                        <div class="flex space-x-2">
+                             <label for="manual-camera-input" class="flex-1 btn-grad p-3 rounded-lg">ถ่ายภาพ</label>
+                            <input type="file" id="manual-camera-input" class="hidden-file-input" accept="image/*" capture="environment">
+                            <label for="manual-gallery-input" class="flex-1 btn-grad p-3 rounded-lg">เลือกจากอัลบั้ม</label>
+                            <input type="file" id="manual-gallery-input" class="hidden-file-input" accept="image/*">
+                        </div>
+                    </div>
+                </div>
+                <div id="results-section" class="mt-6">
+                    <h2 class="font-bold text-lg mb-2">ผลการวิเคราะห์ / กรอกข้อมูล</h2>
+                    <p id="ai-description" class="text-gray-600 mb-3"></p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="calories" class="text-sm font-medium">แคลอรี่ (kcal)</label>
+                            <input type="number" id="calories" class="w-full mt-1 p-2 border rounded-lg bg-gray-50" placeholder="0">
+                        </div>
+                        <div><label for="protein" class="text-sm font-medium">โปรตีน (g)</label><input type="number" id="protein" class="w-full mt-1 p-2 border rounded-lg bg-gray-50" placeholder="0"></div>
+                        <div><label for="carbs" class="text-sm font-medium">คาร์โบไฮเดรต (g)</label><input type="number" id="carbs" class="w-full mt-1 p-2 border rounded-lg bg-gray-50" placeholder="0"></div>
+                        <div><label for="fat" class="text-sm font-medium">ไขมัน (g)</label><input type="number" id="fat" class="w-full mt-1 p-2 border rounded-lg bg-gray-50" placeholder="0"></div>
+                    </div>
+                    <button id="save-btn" class="mt-6 w-full btn-grad p-4 rounded-lg font-bold text-lg">บันทึก</button>
+                </div>
+            </div>
+
+            <!-- Page 2: Daily Dashboard -->
+            <div id="page-daily-dashboard" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-2xl font-bold text-gray-700">สรุปรายวัน</h1>
+                    <button id="settings-btn" class="text-gray-500 hover:text-gray-800 p-2 rounded-full hover:bg-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                </div>
+                <input type="date" id="date-picker" class="w-full p-2 border rounded-lg mb-4">
+                <div id="daily-summary" class="bg-gray-100 p-4 rounded-lg mb-4">
+                    <h2 class="font-bold text-lg mb-3">สรุปเทียบกับเป้าหมาย</h2>
+                    <div id="daily-comparison" class="space-y-2"></div>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <h3 class="font-bold text-center mb-2">แคลอรี่วันนี้</h3>
+                        <canvas id="daily-calorie-pie-chart"></canvas>
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <h3 class="font-bold text-center mb-2">สัดส่วนสารอาหาร</h3>
+                        <canvas id="daily-macro-pie-chart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="font-bold text-lg mb-2">รายการที่บันทึก</h2>
+                    <div id="daily-food-list" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- Page 3: Summary Dashboard -->
+            <div id="page-summary-dashboard" class="hidden">
+                <h1 class="text-2xl font-bold text-gray-700 mb-4">สรุปภาพรวม</h1>
+                <!-- Date Range Selection -->
+                <div class="bg-gray-100 p-3 rounded-lg mb-4">
+                    <div class="flex flex-wrap gap-2 justify-center mb-3">
+                        <button class="date-range-btn flex-1 px-3 py-1 bg-gray-200 rounded-md text-sm" data-days="7">7 วัน</button>
+                        <button class="date-range-btn flex-1 px-3 py-1 bg-gray-200 rounded-md text-sm" data-days="14">14 วัน</button>
+                        <button class="date-range-btn flex-1 px-3 py-1 bg-gray-200 rounded-md text-sm" data-days="30">30 วัน</button>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <input type="date" id="summary-start-date" class="w-full p-1 border rounded-md">
+                        <span>ถึง</span>
+                        <input type="date" id="summary-end-date" class="w-full p-1 border rounded-md">
+                        <button id="summary-custom-range-btn" class="p-2 bg-gray-600 text-white rounded-md">ไป</button>
+                    </div>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                    <h2 class="font-bold text-lg mb-2">แนวโน้มแคลอรี่</h2>
+                    <canvas id="summary-line-chart"></canvas>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <h2 class="font-bold text-lg mb-2">สรุปสารอาหาร (กรัม)</h2>
+                    <canvas id="summary-nutrient-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Page 4: Settings -->
+            <div id="page-settings" class="hidden">
+                 <div class="flex items-center mb-4">
+                    <button id="back-to-daily-btn" class="p-2 mr-2 rounded-full hover:bg-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <h1 class="text-2xl font-bold text-gray-700">ตั้งค่าเป้าหมาย</h1>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg space-y-4">
+                    <div>
+                        <label for="calorie-goal" class="block text-sm font-medium">เป้าหมายแคลอรี่ต่อวัน (kcal)</label>
+                        <input type="number" id="calorie-goal" class="w-full mt-1 p-2 border rounded-lg" placeholder="เช่น 2000">
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium">สัดส่วนสารอาหาร (%)</h3>
+                        <p id="macro-percentage-total" class="text-xs text-gray-500 mb-2">รวม: 100%</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div><label for="protein-goal" class="block text-xs">โปรตีน</label><input type="number" id="protein-goal" class="w-full mt-1 p-2 border rounded-lg macro-goal" placeholder="30"></div>
+                            <div><label for="carb-goal" class="block text-xs">คาร์โบไฮเดรต</label><input type="number" id="carb-goal" class="w-full mt-1 p-2 border rounded-lg macro-goal" placeholder="40"></div>
+                            <div><label for="fat-goal" class="block text-xs">ไขมัน</label><input type="number" id="fat-goal" class="w-full mt-1 p-2 border rounded-lg macro-goal" placeholder="30"></div>
+                        </div>
+                    </div>
+                     <button id="save-settings-btn" class="w-full btn-grad p-3 rounded-lg font-bold">บันทึกการตั้งค่า</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div class="bg-white p-5 rounded-lg flex items-center space-x-3"><svg class="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span id="loading-text">กำลังประมวลผล...</span></div></div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)]"><div class="flex justify-around"><button id="nav-input" class="nav-button flex-1 text-center p-4 text-gray-200"><span class="block">บันทึก</span></button><button id="nav-daily" class="nav-button flex-1 text-center p-4 text-gray-200"><span class="block">รายวัน</span></button><button id="nav-summary" class="nav-button flex-1 text-center p-4 text-gray-200"><span class="block">ภาพรวม</span></button></div></nav>
+
+<script>
+// =================================================================================
+// CONFIGURATION
+// =================================================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyaCcCTLGFElGuOJ87Kotuqh3j3UjmqGtBdQIvfwT1fzTbtXPkov8rv4ASGFj1-p8VS/exec'; // <--- PASTE YOUR WEB APP URL HERE
+const GEMINI_API_KEY = 'AIzaSyB5uy029b5FBGO7jtLdCE5RE-RbinKUmK4';
+
+// =================================================================================
+// GLOBAL STATE
+// =================================================================================
+let currentTab = 'image';
+let currentPage = 'input';
+let selectedImageBase64 = null, selectedImageName = null, selectedImageType = null;
+let dailyCaloriePieChart = null, dailyMacroPieChart = null, summaryLineChart = null, summaryNutrientChart = null;
+let userSettings = { calorieGoal: 2000, proteinPercent: 30, carbPercent: 40, fatPercent: 30 };
+
+// =================================================================================
+// DOM ELEMENTS
+// =================================================================================
+const allPages = {
+    input: document.getElementById('page-input'),
+    daily: document.getElementById('page-daily-dashboard'),
+    summary: document.getElementById('page-summary-dashboard'),
+    settings: document.getElementById('page-settings')
+};
+const loadingOverlay = document.getElementById('loading-overlay'), loadingText = document.getElementById('loading-text');
+const aiDescription = document.getElementById('ai-description');
+const inputs = {
+    cal: document.getElementById('calories'), carb: document.getElementById('carbs'), fat: document.getElementById('fat'), prot: document.getElementById('protein'),
+    text: document.getElementById('text-input'), manualDesc: document.getElementById('manual-description'),
+    datePicker: document.getElementById('date-picker'),
+    calorieGoal: document.getElementById('calorie-goal'), proteinGoal: document.getElementById('protein-goal'), carbGoal: document.getElementById('carb-goal'), fatGoal: document.getElementById('fat-goal'),
+    summaryStart: document.getElementById('summary-start-date'), summaryEnd: document.getElementById('summary-end-date')
+};
+const previews = { image: document.getElementById('image-preview'), text: document.getElementById('text-image-preview'), manual: document.getElementById('manual-image-preview') };
+const fileInputs = ['image-camera-input', 'image-gallery-input', 'text-camera-input', 'text-gallery-input', 'manual-camera-input', 'manual-gallery-input'].map(id => document.getElementById(id));
+
+// =================================================================================
+// INITIALIZATION
+// =================================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Navigation
+    document.getElementById('nav-input').addEventListener('click', () => showPage('input'));
+    document.getElementById('nav-daily').addEventListener('click', () => showPage('daily'));
+    document.getElementById('nav-summary').addEventListener('click', () => showPage('summary'));
+    document.getElementById('settings-btn').addEventListener('click', () => showPage('settings'));
+    document.getElementById('back-to-daily-btn').addEventListener('click', () => showPage('daily'));
+
+    // Input Tabs
+    document.getElementById('tab-btn-image').addEventListener('click', () => showTab('image'));
+    document.getElementById('tab-btn-text').addEventListener('click', () => showTab('text'));
+    document.getElementById('tab-btn-manual').addEventListener('click', () => showTab('manual'));
+
+    // Actions
+    fileInputs.forEach(input => input.addEventListener('change', handleImageSelection));
+    document.getElementById('analyze-text-btn').addEventListener('click', analyzeText);
+    document.getElementById('save-btn').addEventListener('click', saveData);
+    document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+    inputs.datePicker.addEventListener('change', () => loadDailyData(inputs.datePicker.value));
+    document.querySelectorAll('.macro-goal').forEach(input => input.addEventListener('input', updateMacroTotal));
+    
+    // Summary Page Actions
+    document.querySelectorAll('.date-range-btn').forEach(btn => btn.addEventListener('click', handleSummaryRangePreset));
+    document.getElementById('summary-custom-range-btn').addEventListener('click', handleSummaryCustomRange);
+
+    // Initial setup
+    showPage('input');
+    showTab('image');
+    inputs.datePicker.value = new Date().toISOString().split('T')[0];
+});
+
+// =================================================================================
+// PAGE & TAB NAVIGATION
+// =================================================================================
+function showPage(pageKey) {
+    currentPage = pageKey;
+    Object.values(allPages).forEach(p => p.classList.add('hidden'));
+    allPages[pageKey].classList.remove('hidden');
+
+    const navButtons = document.querySelectorAll('.nav-button');
+    navButtons.forEach(btn => btn.classList.remove('active'));
+    const mainPageKey = pageKey === 'settings' ? 'daily' : pageKey;
+    document.getElementById(`nav-${mainPageKey}`).classList.add('active');
+    
+    if (pageKey === 'daily') loadDailyData(inputs.datePicker.value);
+    if (pageKey === 'summary') handleSummaryRangePreset({ target: document.querySelector('.date-range-btn[data-days="7"]') }); // Default to 7 days
+    if (pageKey === 'settings') loadSettings();
+}
+
+function showTab(tabId) {
+    currentTab = tabId;
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+    resetInputs();
+}
+
+// =================================================================================
+// HELPER FUNCTIONS
+// =================================================================================
+const showLoading = (text = 'กำลังประมวลผล...') => { loadingText.textContent = text; loadingOverlay.classList.remove('hidden'); };
+const hideLoading = () => loadingOverlay.classList.add('hidden');
+const parseValue = (text, key) => {
+    const match = text.match(new RegExp(`${key}\\s*=\\s*(\\d+\\.?\\d*)`, 'i'));
+    return match ? parseFloat(match[1]) : 0;
+};
+const toISODateString = (date) => date.toISOString().split('T')[0];
+
+function resetInputs() {
+    aiDescription.textContent = '';
+    inputs.cal.value = ''; inputs.carb.value = ''; inputs.fat.value = ''; inputs.prot.value = '';
+    inputs.text.value = ''; inputs.manualDesc.value = '';
+    Object.values(previews).forEach(img => { img.src = ''; img.classList.add('hidden'); });
+    selectedImageBase64 = null; selectedImageName = null; selectedImageType = null;
+    fileInputs.forEach(input => { input.value = ''; });
+}
+
+// =================================================================================
+// PAGE 1: INPUT LOGIC (No changes from previous version)
+// =================================================================================
+function handleImageSelection(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        selectedImageBase64 = e.target.result; selectedImageName = file.name; selectedImageType = file.type;
+        const currentPreview = previews[currentTab];
+        if (currentPreview) { currentPreview.src = selectedImageBase64; currentPreview.classList.remove('hidden'); }
+        if (currentTab === 'image') analyzeImage(selectedImageBase64);
+    };
+    reader.readAsDataURL(file);
+}
+async function callGeminiAPI(payload) {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+    const result = await response.json();
+    return result.candidates[0].content.parts[0].text;
+}
+async function analyzeImage(base64Image) {
+    showLoading('AI กำลังวิเคราะห์รูปภาพ...');
+    const prompt = "จากรูปอาหารช่วยสรุปมาเป็น บรรทัด1 แคล=เท่าไร,คาบ=เท่าไร,ไขมัน=เท่าไร,โปรตีน=เท่าไร บรรทัดที่2 จากรูปมาคืออะไร ตัวอย่าง แคล= 1050, คาบ= 80, ไขมัน= 70, โปรตีน= 30 จากรูปคือ ข้าวราดกะเพราปลาหมึกและไข่ดาว1ฟอง ถึงรูปนั้นความแม่นยำจะต่ำก็ไม่เป็นไรสรุปมาเลยครับ";
+    try {
+        const payload = { contents: [{ parts: [{ text: prompt }, { inlineData: { mime_type: "image/jpeg", data: base64Image.split(',')[1] } }] }] };
+        const text = await callGeminiAPI(payload);
+        const [nutritionLine = '', descriptionLine = ''] = text.split('\n');
+        inputs.cal.value = parseValue(nutritionLine, 'แคล'); inputs.carb.value = parseValue(nutritionLine, 'คาบ');
+        inputs.fat.value = parseValue(nutritionLine, 'ไขมัน'); inputs.prot.value = parseValue(nutritionLine, 'โปรตีน');
+        aiDescription.textContent = descriptionLine;
+    } catch (error) { console.error('Gemini Image Analysis Error:', error); alert('เกิดข้อผิดพลาดในการวิเคราะห์รูปภาพ'); } finally { hideLoading(); }
+}
+async function analyzeText() {
+    const foodText = inputs.text.value.trim(); if (!foodText) return alert('กรุณาพิมพ์ชื่ออาหาร');
+    showLoading('AI กำลังวิเคราะห์ข้อความ...');
+    const prompt = `จากข้อความ "${foodText}" ช่วยประเมินสารอาหารหน่อยว่า แคล=เท่าไร,คาบ=เท่าไร,ไขมัน=เท่าไร,โปรตีน=เท่าไร และอธิบายสั้นๆว่าคืออะไร ตัวอย่าง: แคล=150,คาบ=25,ไขมัน=2,โปรตีน=8 ข้าวสวย 1 ทัพพี`;
+    try {
+        const payload = { contents: [{ parts: [{ text: prompt }] }] };
+        const text = await callGeminiAPI(payload);
+        const lines = text.split('\n');
+        const nutritionLine = lines.find(line => line.includes('แคล')) || '';
+        const descriptionLine = lines.find(line => !line.includes('แคล=')) || foodText;
+        inputs.cal.value = parseValue(nutritionLine, 'แคล'); inputs.carb.value = parseValue(nutritionLine, 'คาบ');
+        inputs.fat.value = parseValue(nutritionLine, 'ไขมัน'); inputs.prot.value = parseValue(nutritionLine, 'โปรตีน');
+        aiDescription.textContent = descriptionLine;
+    } catch (error) { console.error('Gemini Text Analysis Error:', error); alert('เกิดข้อผิดพลาดในการวิเคราะห์ข้อความ'); } finally { hideLoading(); }
+}
+async function saveData() {
+    if (GAS_URL.includes('PASTE YOUR WEB APP URL HERE')) return alert('กรุณาตั้งค่า Google Apps Script URL ในโค้ดก่อนใช้งาน');
+    if (!inputs.cal.value || parseFloat(inputs.cal.value) <= 0) return alert('กรุณากรอกข้อมูลแคลอรี่');
+    showLoading('กำลังบันทึกข้อมูล...');
+    const description = (currentTab === 'manual' && inputs.manualDesc.value.trim()) ? inputs.manualDesc.value.trim() : (aiDescription.textContent || 'บันทึกเอง');
+    const params = new URLSearchParams({ action: 'saveFood', calories: inputs.cal.value, carbs: inputs.carb.value || 0, fat: inputs.fat.value || 0, protein: inputs.prot.value || 0, description: description });
+    if (selectedImageBase64) {
+        params.append('base64Data', selectedImageBase64.split(',')[1]); params.append('fileName', selectedImageName || 'image.jpg'); params.append('mimeType', selectedImageType || 'image/jpeg');
+    }
+    try {
+        const response = await fetch(GAS_URL, { method: 'POST', body: params });
+        const result = await response.json();
+        if (result.status === 'success') { alert('บันทึกข้อมูลสำเร็จ!'); resetInputs(); showTab('image'); } else { throw new Error(result.message || 'Unknown error'); }
+    } catch (error) { console.error('Save Data Error:', error); alert(`เกิดข้อผิดพลาดในการบันทึก: ${error.message}`); } finally { hideLoading(); }
+}
+
+// =================================================================================
+// PAGE 2: DAILY DASHBOARD LOGIC
+// =================================================================================
+async function loadDailyData(date) {
+    if (!date) return;
+    showLoading('กำลังโหลดข้อมูลรายวัน...');
+    try {
+        const response = await fetch(`${GAS_URL}?action=getDailyData&date=${date}`);
+        if (!response.ok) throw new Error('Network response was not ok.');
+        const result = await response.json();
+        if (result.status === 'success') {
+            userSettings = result.settings;
+            renderDailyDashboard(result.data, result.settings);
+        } else { throw new Error(result.message); }
+    } catch (error) {
+        console.error('Error loading daily data:', error);
+        document.getElementById('daily-food-list').innerHTML = `<p class="text-center text-red-500">เกิดข้อผิดพลาด: ${error.message}</p>`;
+    } finally { hideLoading(); }
+}
+
+function renderDailyDashboard(data, settings) {
+    const totals = data.reduce((acc, item) => {
+        acc.cal += parseFloat(item.calories || 0); acc.carb += parseFloat(item.carbs || 0);
+        acc.fat += parseFloat(item.fat || 0); acc.prot += parseFloat(item.protein || 0);
+        return acc;
+    }, { cal: 0, carb: 0, fat: 0, prot: 0 });
+    renderComparison(totals, settings);
+    renderDailyCaloriePieChart(totals.cal, settings.calorieGoal);
+    renderDailyMacroPieChart(totals);
+    renderFoodList(data);
+}
+
+function createProgressBar(label, consumed, goal) {
+    const percentage = goal > 0 ? (consumed / goal) * 100 : 0;
+    const isOver = percentage > 100;
+    const displayPercentage = Math.min(percentage, 100);
+    return `<div><div class="flex justify-between text-sm mb-1"><span>${label}</span><span>${consumed.toFixed(1)} / ${goal.toFixed(1)} g</span></div><div class="progress-bar"><div class="progress-bar-inner ${isOver ? 'over' : ''}" style="width: ${displayPercentage}%"></div></div></div>`;
+}
+
+function renderComparison(totals, settings) {
+    const { calorieGoal, proteinPercent, carbPercent, fatPercent } = settings;
+    const goals = { prot: (calorieGoal * (proteinPercent / 100)) / 4, carb: (calorieGoal * (carbPercent / 100)) / 4, fat: (calorieGoal * (fatPercent / 100)) / 9 };
+    document.getElementById('daily-comparison').innerHTML = `<div class="text-center mb-3"><span class="text-3xl font-bold">${totals.cal.toFixed(0)}</span><span class="text-lg text-gray-600">/ ${calorieGoal.toFixed(0)} kcal</span></div><div class="space-y-3">${createProgressBar('โปรตีน', totals.prot, goals.prot)}${createProgressBar('คาร์โบไฮเดรต', totals.carb, goals.carb)}${createProgressBar('ไขมัน', totals.fat, goals.fat)}</div>`;
+}
+
+function renderFoodList(data) {
+    const foodListContainer = document.getElementById('daily-food-list');
+    if (data.length === 0) { foodListContainer.innerHTML = `<p class="text-center text-gray-500">ไม่พบข้อมูลสำหรับวันที่เลือก</p>`; return; }
+    foodListContainer.innerHTML = data.map(item => {
+        const itemDate = new Date(item.date);
+        const timeString = itemDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        return `
+        <div class="bg-white p-3 rounded-lg shadow flex items-center space-x-4">
+            <img src="${item.imageUrl || 'https://placehold.co/64x64/e2e8f0/a0aec0?text=ไม่มีรูป'}" alt="Food" class="w-16 h-16 object-cover rounded-md">
+            <div class="flex-1">
+                <div class="flex justify-between items-start">
+                    <p class="font-semibold">${item.description || 'รายการอาหาร'}</p>
+                    <span class="text-xs text-gray-500 whitespace-nowrap">${timeString} น.</span>
+                </div>
+                <p class="text-sm text-gray-600">แคล: ${item.calories || 0} | โปรตีน: ${item.protein || 0}g | คาร์บ: ${item.carbs || 0}g | ไขมัน: ${item.fat || 0}g</p>
+            </div>
+        </div>
+    `}).join('');
+}
+
+// =================================================================================
+// PAGE 3: SUMMARY DASHBOARD LOGIC (UPDATED)
+// =================================================================================
+function handleSummaryRangePreset(event) {
+    const days = parseInt(event.target.dataset.days, 10);
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - (days - 1));
+    
+    inputs.summaryStart.value = toISODateString(startDate);
+    inputs.summaryEnd.value = toISODateString(endDate);
+    
+    document.querySelectorAll('.date-range-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    loadSummaryData(toISODateString(startDate), toISODateString(endDate));
+}
+
+function handleSummaryCustomRange() {
+    const startDate = inputs.summaryStart.value;
+    const endDate = inputs.summaryEnd.value;
+    if (!startDate || !endDate) {
+        return alert('กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด');
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+        return alert('วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด');
+    }
+    document.querySelectorAll('.date-range-btn').forEach(b => b.classList.remove('active'));
+    loadSummaryData(startDate, endDate);
+}
+
+async function loadSummaryData(startDate, endDate) {
+    showLoading('กำลังโหลดข้อมูลภาพรวม...');
+    try {
+        const response = await fetch(`${GAS_URL}?action=getSummaryData&startDate=${startDate}&endDate=${endDate}`);
+        if (!response.ok) throw new Error('Network response was not ok.');
+        const result = await response.json();
+        if (result.status === 'success') {
+            renderSummaryLineChart(result.data);
+            renderSummaryNutrientChart(result.data); // Changed function call
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Error loading summary data:', error);
+        alert('เกิดข้อผิดพลาดในการโหลดข้อมูลภาพรวม');
+    } finally {
+        hideLoading();
+    }
+}
+
+// =================================================================================
+// PAGE 4: SETTINGS LOGIC (No changes from previous version)
+// =================================================================================
+async function loadSettings() {
+    showLoading('กำลังโหลดการตั้งค่า...');
+    try {
+        const response = await fetch(`${GAS_URL}?action=getSettings`);
+        const result = await response.json();
+        if (result.status === 'success') {
+            userSettings = result.settings;
+            inputs.calorieGoal.value = userSettings.calorieGoal; inputs.proteinGoal.value = userSettings.proteinPercent;
+            inputs.carbGoal.value = userSettings.carbPercent; inputs.fatGoal.value = userSettings.fatPercent;
+            updateMacroTotal();
+        } else { throw new Error(result.message); }
+    } catch (error) { console.error('Error loading settings:', error); alert('ไม่สามารถโหลดการตั้งค่าได้'); } finally { hideLoading(); }
+}
+async function saveSettings() {
+    const totalPercent = ['protein', 'carb', 'fat'].reduce((sum, id) => sum + (parseFloat(inputs[id + 'Goal'].value) || 0), 0);
+    if (totalPercent !== 100) { return alert(`ผลรวมของสัดส่วนสารอาหารต้องเป็น 100% (ปัจจุบันคือ ${totalPercent}%)`); }
+    showLoading('กำลังบันทึกการตั้งค่า...');
+    const params = new URLSearchParams({ action: 'saveSettings', calorieGoal: inputs.calorieGoal.value || 2000, proteinPercent: inputs.proteinGoal.value || 30, carbPercent: inputs.carbGoal.value || 40, fatPercent: inputs.fatGoal.value || 30, });
+    try {
+        const response = await fetch(GAS_URL, { method: 'POST', body: params });
+        const result = await response.json();
+        if (result.status === 'success') { alert('บันทึกการตั้งค่าสำเร็จ!'); showPage('daily'); } else { throw new Error(result.message); }
+    } catch (error) { console.error('Save Settings Error:', error); alert('เกิดข้อผิดพลาดในการบันทึกการตั้งค่า'); } finally { hideLoading(); }
+}
+function updateMacroTotal() {
+    const total = ['protein', 'carb', 'fat'].reduce((sum, id) => sum + (parseFloat(inputs[id + 'Goal'].value) || 0), 0);
+    const totalEl = document.getElementById('macro-percentage-total');
+    totalEl.textContent = `รวม: ${total}%`;
+    totalEl.style.color = total === 100 ? 'green' : 'red';
+}
+
+// =================================================================================
+// CHART RENDERING FUNCTIONS
+// =================================================================================
+function renderChart(ctx, chartInstance, type, data, options) {
+    if (chartInstance) chartInstance.destroy();
+    return new Chart(ctx, { type, data, options });
+}
+
+function renderDailyCaloriePieChart(consumed, goal) {
+    const remaining = Math.max(0, goal - consumed);
+    const ctx = document.getElementById('daily-calorie-pie-chart').getContext('2d');
+    dailyCaloriePieChart = renderChart(ctx, dailyCaloriePieChart, 'pie', {
+        labels: ['บริโภคแล้ว', 'คงเหลือ'], datasets: [{ data: [consumed, remaining], backgroundColor: ['#f87171', '#e5e7eb'] }]
+    }, { responsive: true, plugins: { legend: { display: false } } });
+}
+
+function renderDailyMacroPieChart(totals) {
+    const { prot, carb, fat } = totals; const totalMacros = prot + carb + fat;
+    const ctx = document.getElementById('daily-macro-pie-chart').getContext('2d');
+    dailyMacroPieChart = renderChart(ctx, dailyMacroPieChart, 'pie', {
+        labels: ['โปรตีน', 'คาร์โบไฮเดรต', 'ไขมัน'], datasets: [{ data: totalMacros > 0 ? [prot, carb, fat] : [1, 1, 1], backgroundColor: ['#34D399', '#FBBF24', '#F87171'] }]
+    }, { responsive: true, plugins: { legend: { position: 'top' } } });
+}
+
+function renderSummaryLineChart(data) {
+    const ctx = document.getElementById('summary-line-chart').getContext('2d');
+    const labels = data.map(d => new Date(d.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }));
+    const calories = data.map(d => d.calories);
+    summaryLineChart = renderChart(ctx, summaryLineChart, 'line', {
+        labels: labels, datasets: [{ label: 'แคลอรี่', data: calories, borderColor: '#3b82f6', tension: 0.1, fill: false }]
+    }, { responsive: true, scales: { y: { beginAtZero: true } } });
+}
+
+function renderSummaryNutrientChart(data) {
+    const ctx = document.getElementById('summary-nutrient-chart').getContext('2d');
+    
+    // Data is already sorted by date from the backend
+    const labels = data.map(d => new Date(d.date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }));
+    
+    // Prepare datasets for nutrients in grams
+    const proteinGrams = data.map(d => d.protein);
+    const carbGrams = data.map(d => d.carbs);
+    const fatGrams = data.map(d => d.fat);
+
+    summaryNutrientChart = renderChart(ctx, summaryNutrientChart, 'bar', {
+        labels: labels,
+        datasets: [
+            {
+                label: 'โปรตีน (g)',
+                data: proteinGrams,
+                backgroundColor: '#34D399',
+            },
+            {
+                label: 'คาร์โบไฮเดรต (g)',
+                data: carbGrams,
+                backgroundColor: '#FBBF24',
+            },
+            {
+                label: 'ไขมัน (g)',
+                data: fatGrams,
+                backgroundColor: '#F87171',
+            }
+        ]
+    }, {
+        responsive: true,
+        scales: {
+            x: { 
+                stacked: false // Bars are not stacked
+            },
+            y: { 
+                stacked: false, // Bars are not stacked
+                beginAtZero: true,
+                title: { 
+                    display: true, 
+                    text: 'ปริมาณ (กรัม)' 
+                } 
+            }
+        },
+        plugins: { 
+            tooltip: { 
+                mode: 'index', 
+                intersect: false 
+            } 
+        }
+    });
+}
+
+</script>
+</body>
+</html>
