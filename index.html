@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>แสดงรูปฮิปโปน้อยด้วยหลายวิธี</title>
+  <style>
+    .box {
+      width: 300px;
+      height: 200px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>1. รูปแบบปกติ: &lt;img&gt;</h2>
+  <img src="https://drive.google.com/uc?export=view&id=17qwpleJEdGQJQnGBMlh-uTfwZ7o0JOu1"
+       alt="ฮิปโปน้อย" style="max-width: 300px;">
+
+  <h2>2. รูปแบบ CSS background-image</h2>
+  <div class="box" style="background-image: url('https://drive.google.com/uc?export=view&id=17qwpleJEdGQJQnGBMlh-uTfwZ7o0JOu1'); background-size: cover; background-position: center;"></div>
+
+  <h2>3. รูปแบบ &lt;object&gt;</h2>
+  <object data="https://drive.google.com/uc?export=view&id=17qwpleJEdGQJQnGBMlh-uTfwZ7o0JOu1"
+          type="image/jpeg" width="300" height="200">
+    <p>เบราว์เซอร์ไม่รองรับการแสดงภาพนี้</p>
+  </object>
+
+  <h2>4. รูปแบบ &lt;picture&gt; (Fallback WebP > JPG)</h2>
+  <picture>
+    <source srcset="https://drive.google.com/uc?export=view&id=17qwpleJEdGQJQnGBMlh-uTfwZ7o0JOu1" type="image/webp">
+    <img src=" "
+         alt="ฮิปโปน้อย" style="max-width: 300px;">
+  </picture>
+
+  <h2>5. รูปแบบ &lt;canvas&gt; + JavaScript</h2>
+  <canvas id="hippoCanvas" width="300" height="200" class="box"></canvas>
+
+  <h2>6. รูปแบบสร้างผ่าน JavaScript DOM</h2>
+  <div id="jsImageContainer"></div>
+
+  <script>
+    // แบบ canvas
+    const canvas = document.getElementById('hippoCanvas');
+    const ctx = canvas.getContext('2d');
+    const imgCanvas = new Image();
+    imgCanvas.crossOrigin = 'anonymous'; // ป้องกัน CORS ปัญหา (บางภาพอาจยังโหลดไม่ได้)
+    imgCanvas.onload = () => ctx.drawImage(imgCanvas, 0, 0, 300, 200);
+    imgCanvas.src = "https://drive.google.com/uc?export=view&id=17qwpleJEdGQJQnGBMlh-uTfwZ7o0JOu1";
+
+    // แบบสร้าง <img> ด้วย JavaScript
+    const jsImg = document.createElement('img');
+    jsImg.src = "https://drive.google.com/uc?export=view&id=17qwpleJEdGQJQnGBMlh-uTfwZ7o0JOu1";
+    jsImg.alt = "ฮิปโปน้อยจาก JS";
+    jsImg.style.maxWidth = '300px';
+    document.getElementById('jsImageContainer').appendChild(jsImg);
+  </script>
+
+</body>
+</html>
